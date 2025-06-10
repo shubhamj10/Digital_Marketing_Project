@@ -8,13 +8,13 @@ function PieChart() {
 
   useEffect(() => {
     // Fetch general spends
-    fetch('http://localhost:5000/data/piechart-general-spends')
+    fetch(`${import.meta.env.VITE_BACKEND_URL}/data/piechart-general-spends`)
       .then(res => res.json())
       .then(data => setGeneralData(data))
       .catch(err => console.error('General data error:', err));
 
     // Fetch digital spends
-    fetch('http://localhost:5000/data/piechart-digital-spends')
+    fetch(`${import.meta.env.VITE_BACKEND_URL}/data/piechart-digital-spends`)
       .then(res => res.json())
       .then(data => setDigitalData(data))
       .catch(err => console.error('Digital data error:', err));

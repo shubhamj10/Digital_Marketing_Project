@@ -30,7 +30,7 @@ const TvAndDigitalSpends = () => {
     useEffect(() => {
         const fetchData = async () => {
             try {
-                const response = await fetch('http://localhost:5000/data/spends-data');
+                const response = await fetch(`${import.meta.env.VITE_BACKEND_URL}/data/spends-data`);
                 const jsonData = await response.json();
 
                 console.log(jsonData);

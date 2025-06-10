@@ -7,7 +7,7 @@ function BarGraph() {
   useEffect(() => {
     const fetchExcelData = async () => {
       try {
-        const response = await fetch('http://localhost:5000/data/sales-data');
+        const response = await fetch(`${import.meta.env.VITE_BACKEND_URL}/data/sales-data`);
         if (!response.ok) {
           throw new Error('Failed to fetch data');
         }
