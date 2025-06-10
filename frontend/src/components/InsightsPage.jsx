@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { useLocation } from 'react-router-dom';
-import { marked } from 'marked'; // ⬅️ Import the markdown parser
+import { marked } from 'marked'; 
 
 const InsightsPage = () => {
   const location = useLocation();
@@ -25,7 +25,7 @@ Ensure your response is specific, data-driven, and aligned to business impact.
   const handleSubmit = async () => {
     setLoading(true);
     try {
-      const res = await fetch('http://localhost:5001/api/get-insights', {
+      const res = await fetch(`${import.meta.env.VITE_BACKEND_URL}/api/insights`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ prompt, excelFile }),

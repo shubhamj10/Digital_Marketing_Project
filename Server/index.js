@@ -4,8 +4,11 @@ const fs = require('fs');
 const XLSX = require('xlsx');
 const cors = require('cors'); 
 const app = express();
+const { spawn } = require('child_process');
+
 
 app.use(cors());
+app.use(express.json());
 
 // Route 1
 app.get('/data/sales-data', (req, res) => {
@@ -86,6 +89,45 @@ app.get('/data/spends-data', (req, res) => {
     res.status(404).send('File not found');
   }
 });
+
+// Route 5: Generate insights using Python script
+app.post('/api/insights', express.json(), (req, res) => {
+  const { prompt, excelFile } = req.body;
+
+  if (!prompt || !excelFile) {
+    return res.status(400).json({ error: 'Missing prompt or excelFile' });
+  }
+
+  const pythonProcess = spawn('python3', ['domoInsights.py', prompt, excelFile]);
+
+  let result = '';
+  let error = '';
+
+  pythonProcess.stdout.on('data', data => {
+    result += data.toString();
+  });
+
+  pythonProcess.stderr.on('data', data => {
+    error += data.toString();
+  });
+
+  pythonProcess.on('close', code => {
+    if (code !== 0 || error) {
+      console.error('Python error:', error);
+      return res.status(500).json({ error: error || 'Python script failed' });
+    }
+
+    try {
+      const parsed = JSON.parse(result);
+      res.json(parsed);
+    } catch (e) {
+      console.error('Failed to parse Python output:', result);
+      res.status(500).json({ error: 'Invalid JSON returned from Python' });
+    }
+  });
+});
+
+
 
 module.exports = app;
 const PORT = 5000;
