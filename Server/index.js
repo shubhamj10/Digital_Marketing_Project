@@ -98,7 +98,7 @@ app.post('/api/insights', express.json(), (req, res) => {
     return res.status(400).json({ error: 'Missing prompt or excelFile' });
   }
 
-  const pythonProcess = spawn('python3', ['domoInsights.py', prompt, excelFile]);
+  const pythonProcess = spawn('python', ['domoInsights.py', prompt, excelFile]);
 
   let result = '';
   let error = '';
