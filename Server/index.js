@@ -4,11 +4,41 @@ const fs = require('fs');
 const XLSX = require('xlsx');
 const cors = require('cors'); 
 const app = express();
-const { spawn } = require('child_process');
-
+const dotenv = require('dotenv');
+const { OpenAI } = require('openai');
+dotenv.config();
 
 app.use(cors());
 app.use(express.json());
+
+
+
+const openai = new OpenAI({ apiKey: process.env.open_ai_key });
+const EXCEL_FOLDER = path.join(__dirname, 'data');
+
+function cleanExcelData(data) {
+  if (!Array.isArray(data) || data.length === 0) return "No usable data";
+
+  const filteredRows = data.filter(row => Object.values(row).some(value => value !== null && value !== 0 && value !== ''));
+
+  const validColumns = Object.keys(filteredRows[0]).filter(col =>
+    filteredRows.some(row => row[col] !== null && row[col] !== 0 && row[col] !== '')
+  );
+
+  const cleanedData = filteredRows.map(row => {
+    const cleanedRow = {};
+    validColumns.forEach(col => cleanedRow[col] = row[col]);
+    return cleanedRow;
+  });
+
+  const table = [validColumns.join('\t')];
+  cleanedData.slice(0, 50).forEach(row => {
+    table.push(validColumns.map(col => row[col]).join('\t'));
+  });
+
+  return table.join('\n');
+}
+
 
 // Route 1
 app.get('/data/sales-data', (req, res) => {
@@ -90,44 +120,43 @@ app.get('/data/spends-data', (req, res) => {
   }
 });
 
-// Route 5: Generate insights using Python script
-app.post('/api/insights', express.json(), (req, res) => {
+// Route 5:
+app.post('/api/insights', async (req, res) => {
   const { prompt, excelFile } = req.body;
 
-  if (!prompt || !excelFile) {
-    return res.status(400).json({ error: 'Missing prompt or excelFile' });
+  if (!prompt || !excelFile || excelFile.includes('..') || excelFile.startsWith('/')) {
+    return res.status(400).json({ error: 'Invalid or missing prompt/excelFile' });
   }
 
-  const pythonProcess = spawn('python', ['domoInsights.py', prompt, excelFile]);
+  const filePath = path.join(EXCEL_FOLDER, excelFile);
+  if (!fs.existsSync(filePath)) {
+    return res.status(404).json({ error: `File not found: ${excelFile}` });
+  }
 
-  let result = '';
-  let error = '';
+  try {
+    const workbook = XLSX.readFile(filePath);
+    const worksheet = workbook.Sheets[workbook.SheetNames[0]];
+    const data = XLSX.utils.sheet_to_json(worksheet);
 
-  pythonProcess.stdout.on('data', data => {
-    result += data.toString();
-  });
+    const dataString = cleanExcelData(data);
+    const fullPrompt = `${prompt}\n\nHere is the dataset:\n${dataString}`;
 
-  pythonProcess.stderr.on('data', data => {
-    error += data.toString();
-  });
+    const completion = await openai.chat.completions.create({
+      model: "gpt-4",
+      messages: [
+        { role: "system", content: "You are an expert data analyst." },
+        { role: "user", content: fullPrompt }
+      ],
+      temperature: 0.5
+    });
 
-  pythonProcess.on('close', code => {
-    if (code !== 0 || error) {
-      console.error('Python error:', error);
-      return res.status(500).json({ error: error || 'Python script failed' });
-    }
-
-    try {
-      const parsed = JSON.parse(result);
-      res.json(parsed);
-    } catch (e) {
-      console.error('Failed to parse Python output:', result);
-      res.status(500).json({ error: 'Invalid JSON returned from Python' });
-    }
-  });
+    const insight = completion.choices[0].message.content;
+    res.json({ insight });
+  } catch (err) {
+    console.error("Insight generation failed:", err.message);
+    res.status(500).json({ error: "Failed to generate insight", details: err.message });
+  }
 });
-
-
 
 module.exports = app;
 const PORT = 5000;
