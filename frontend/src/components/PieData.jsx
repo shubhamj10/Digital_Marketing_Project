@@ -43,15 +43,15 @@ const PieData = ({ title, labels, values, colors,excelFile }) => {
 
   return (
     <div className="bg-white p-4 rounded-2xl shadow-lg w-full mx-auto h-[450px] flex flex-col justify-between">
-      <h2 className="text-lg font-semibold mb-2">{title}</h2>
+      <h2 className="text-lg font-semibold mb-6">{title}</h2>
 
       <div className="flex items-start gap-4 flex-1 overflow-hidden">
-        <div className="w-52 h-52 flex-shrink-0">
+        <div className="w-52 h-52 m-7 flex-shrink-0">
           <Doughnut data={data} options={options} />
         </div>
 
         <div className="w-1/3 ml-auto overflow-y-auto max-h-[200px]">
-          <table className="table-auto w-full text-xs">
+          <table className="table-auto w-full text-sm">
             <thead>
               <tr>
                 <th className="px-2 py-1 text-left">Name</th>
@@ -72,7 +72,7 @@ const PieData = ({ title, labels, values, colors,excelFile }) => {
         </div>
       </div>
 
-      <div className="text-right mt-4">
+      <div className="text-right mt-2 m-4">
         <button
           onClick={handleInsightsClick}
           className="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700"
